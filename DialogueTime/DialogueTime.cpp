@@ -4,8 +4,8 @@
 #include <iostream>
 #include <string>
 
-#define WINDOW_HEIGHT 1000
-#define WINDOW_WIDTH 1800
+#define WINDOW_HEIGHT 600
+#define WINDOW_WIDTH 800
 
 class Sprite {
 public:
@@ -37,9 +37,9 @@ public:
     }
 
     // Render the sprite at position (x, y).
-    void render() const {
-        SDL_Rect destRect = { x_position, y_position, width, height };
-        SDL_RenderCopy(renderer, texture, nullptr, &destRect);
+    void render(const SDL_Rect &source_rect) const {
+        SDL_Rect destRect = { x_position, y_position, source_rect.w, source_rect.h };
+        SDL_RenderCopy(renderer, texture,&source_rect, &destRect);
         //update the private variables for position
     }
 // move the sprite based on user input
@@ -52,6 +52,8 @@ public:
             x_position += movement_speed; // move right
         }
 	}
+    // function to handle moving to next source_rect for sprite animation
+   /* void next_idle_frame*/
 
     // Accessor functions.
     int getWidth() const { return width; }
@@ -89,7 +91,7 @@ int main(int argc, char* argv[])
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         WINDOW_WIDTH, WINDOW_HEIGHT,
-        NULL);
+        SDL_WINDOW_SHOWN);
     if (!window) {
         std::cerr << "Window error: "
             << SDL_GetError() << std::endl;
@@ -109,9 +111,15 @@ int main(int argc, char* argv[])
         SDL_Quit();
         return -1;
     }
-
-    // Create a player sprite.
-    Sprite Player(renderer,"Idle(1).png", 500, 500);
+    //define a source rectangle for the sprite
+    SDL_Rect source_rect;
+    source_rect.x = 0;
+    source_rect.y = 0;
+    source_rect.w = 60;
+    source_rect.h = 60;
+    // Create a player sprite and NPC sprites
+    Sprite Player(renderer,"W_witch_idle.png", 0, WINDOW_HEIGHT - source_rect.h);
+    //Sprite NPC1(renderer, "", 0, 0);
 
     bool game_running = true;
     SDL_Event event;
@@ -130,13 +138,14 @@ int main(int argc, char* argv[])
         SDL_RenderClear(renderer);
 
         // Render the player sprite.
-        Player.render();
+        Player.render(source_rect);
 
         // Present the updated frame.
         SDL_RenderPresent(renderer);
 		// Handle user input for the player sprite.
         const Uint8* keystate = SDL_GetKeyboardState(nullptr);
         Player.input_update(keystate);
+        //each frame, change the frame of the sprite sheet (idle/)
         SDL_Delay(16);  // Roughly 60 FPS.
     }
 
