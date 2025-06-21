@@ -133,6 +133,7 @@
   <ItemGroup>
     <Image Include="Idle(1).png" />
     <Image Include="W_witch_idle.png" />
+    <Image Include="W_witch_run.png" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

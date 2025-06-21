@@ -26,5 +26,8 @@
     <Image Include="W_witch_idle.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="W_witch_run.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

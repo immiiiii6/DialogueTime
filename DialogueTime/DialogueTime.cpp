@@ -7,49 +7,62 @@
 #define WINDOW_HEIGHT 600
 #define WINDOW_WIDTH 800
 
+enum class AnimationState {
+    Idle,
+    Run
+};
+
 class Sprite {
 public:
     // Constructor: loads image file and prepares texture.
-    Sprite(SDL_Renderer* renderer, const std::string& filePath, int startx, int starty)
+    Sprite(SDL_Renderer* renderer, const std::string& idlefilePath, const std::string& runfilePath, int startx, int starty)
         : renderer(renderer), x_position(startx), y_position(starty) {
-        // Load image file into SDL_Surface.
-        SDL_Surface* surface = IMG_Load(filePath.c_str());
-        if (!surface) {
-            std::cerr << "Failed to load " << filePath << ": "
-                << IMG_GetError() << std::endl;
-        }
-        // Create a texture from the surface.
-        texture = SDL_CreateTextureFromSurface(renderer, surface);
-        if (!texture) {
-            std::cerr << "Failed to create texture: "
-                << SDL_GetError() << std::endl;
-        }
-        // Store dimensions for rendering.
-        width = surface->w;
-        height = surface->h;
-        // Free the surface as it’s no longer needed.
-        SDL_FreeSurface(surface);
+        // load textures from file path for the sprite
+        idleTexture = IMG_LoadTexture(renderer, idlefilePath.c_str());
+        runTexture = IMG_LoadTexture(renderer, runfilePath.c_str());
     }
 
     // Destructor: clean up the texture.
-    ~Sprite() {
+  /*  ~Sprite() {
         SDL_DestroyTexture(texture);
-    }
-
+    }*/
+ 
     // Render the sprite at position (x, y).
-    void render(const SDL_Rect &source_rect) const {
+    void render(SDL_Rect &source_rect) const {
+        SDL_Texture* currentTexture = nullptr;
+        //check current animation state to get the right rexture
+        if (currentState == AnimationState::Idle) {
+            currentTexture = idleTexture;
+        }
+        else if (currentState == AnimationState::Run) {
+            currentTexture = runTexture;
+        }
+		//adjust source rectangle based on frame index
+        source_rect.y = source_rect.y * frameindex;
         SDL_Rect destRect = { x_position, y_position, source_rect.w, source_rect.h };
-        SDL_RenderCopy(renderer, texture,&source_rect, &destRect);
+        SDL_RenderCopy(renderer, currentTexture, &source_rect, &destRect);
         //update the private variables for position
     }
-// move the sprite based on user input
+    //helper function to change the animation state of the sprite in other member functions
+    void setAnimationState(AnimationState newState) {
+        currentState = newState;
+    }
+// move the sprite based on user input and change animation state accordingly
     void input_update(const Uint8* keystate) {
         // Handle user input here, e.g., move the sprite based on what key is held down
         if (keystate[SDL_SCANCODE_A] == 1) {
+            // change to running state
+            setAnimationState(AnimationState::Run);
             x_position += -movement_speed; // move left 
+            
         }
         else if (keystate[SDL_SCANCODE_D] == 1) {
+            setAnimationState(AnimationState::Run);
             x_position += movement_speed; // move right
+            
+        }
+        else {
+            setAnimationState(AnimationState::Idle);
         }
 	}
     // function to handle moving to next source_rect for sprite animation
@@ -61,12 +74,15 @@ public:
 
 private:
     SDL_Renderer* renderer;  // Our renderer stored from the initializer list.
-    SDL_Texture* texture;
+    SDL_Texture* idleTexture;
+    SDL_Texture* runTexture;
     int width;
     int height;
     int x_position;
     int y_position;
 	int movement_speed = 5; // Speed of movement, can be adjusted.
+    AnimationState currentState;
+    int frameindex = 1;
 };
 
 int main(int argc, char* argv[])
@@ -115,11 +131,11 @@ int main(int argc, char* argv[])
     SDL_Rect source_rect;
     source_rect.x = 0;
     source_rect.y = 0;
-    source_rect.w = 60;
-    source_rect.h = 60;
+    source_rect.w = 64;
+    source_rect.h = 64;
     // Create a player sprite and NPC sprites
-    Sprite Player(renderer,"W_witch_idle.png", 0, WINDOW_HEIGHT - source_rect.h);
-    //Sprite NPC1(renderer, "", 0, 0);
+    // multiple player sprites for different animations
+    Sprite player(renderer,"W_witch_idle.png","W_witch_run.png", 0, WINDOW_HEIGHT - source_rect.h);
 
     bool game_running = true;
     SDL_Event event;
@@ -136,17 +152,19 @@ int main(int argc, char* argv[])
 	  // Clear the screen (black).
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
+        // Handle user input for the player sprite.
+        const Uint8* keystate = SDL_GetKeyboardState(nullptr);
+        player.input_update(keystate);
 
         // Render the player sprite.
-        Player.render(source_rect);
-
+        player.render(source_rect);
+       
         // Present the updated frame.
         SDL_RenderPresent(renderer);
-		// Handle user input for the player sprite.
-        const Uint8* keystate = SDL_GetKeyboardState(nullptr);
-        Player.input_update(keystate);
+	
         //each frame, change the frame of the sprite sheet (idle/)
         SDL_Delay(16);  // Roughly 60 FPS.
+        //move to next frame of sprite sheet
     }
 
     // Clean up.
