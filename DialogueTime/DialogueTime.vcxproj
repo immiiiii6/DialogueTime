@@ -132,6 +132,8 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="Idle(1).png" />
+    <Image Include="R_witch_idle.png" />
+    <Image Include="R_witch_run.png" />
     <Image Include="W_witch_idle.png" />
     <Image Include="W_witch_run.png" />
   </ItemGroup>

@@ -20,11 +20,23 @@ enum class directionFacing {
 class Sprite {
 public:
     // Constructor: loads image file and prepares texture.
-    Sprite(SDL_Renderer* renderer, const std::string& idlefilePath, const std::string& runfilePath, int startx, int starty)
-        : renderer(renderer), x_position(startx), y_position(starty) {
+    Sprite(SDL_Renderer* renderer, const std::string& idlefilePath, int idleFrameCount, const std::string& runfilePath, int runFrameCount, int startx)
+        : renderer(renderer), x_position(startx) {
         // load textures from file path for the sprite
         idleTexture = IMG_LoadTexture(renderer, idlefilePath.c_str());
         runTexture = IMG_LoadTexture(renderer, runfilePath.c_str());
+
+        int idleTexW, idleTexH;
+        SDL_QueryTexture(idleTexture, nullptr, nullptr, &idleTexW, &idleTexH);
+        frameWidthIdle = idleTexW;
+        frameHeightIdle = idleTexH / idleFrameCount;
+
+        int runTexW, runTexH;
+        SDL_QueryTexture(runTexture, nullptr, nullptr, &runTexW, &runTexH);
+        frameWidthRun = runTexW ;
+        frameHeightRun = runTexH / runFrameCount;
+
+        y_position = (WINDOW_HEIGHT - frameHeightIdle) + 10;
     }
 
     // Destructor: clean up the texture.
@@ -33,19 +45,24 @@ public:
     }*/
 
     // Render the sprite at position (x, y).
-    void render(SDL_Rect& source_rect) const {
+    void render() const {
+        SDL_Rect source_rect;
         SDL_Texture* currentTexture = nullptr;
         //check current animation state to get the right rexture
         if (currentState == AnimationState::Idle) {
             currentTexture = idleTexture;
+            source_rect.x = 0;
+            source_rect.y = 0 + (frameindex * frameHeightIdle);
+            source_rect.w = frameWidthIdle;
+            source_rect.h = frameHeightIdle;
         }
         else if (currentState == AnimationState::Run) {
             currentTexture = runTexture;
+            source_rect.x = 0;
+            source_rect.y = 0 + (frameindex * frameHeightRun);
+            source_rect.w = frameWidthRun;
+            source_rect.h = frameHeightRun;
         }
-        //adjust source rectangle based on frame index
-        source_rect.y = 0; // reset before using frame index to move to correct frame
-        source_rect.y = source_rect.y + (frameindex * source_rect.h);
-
         SDL_Rect destRect = { x_position, y_position, source_rect.w, source_rect.h };
         if (facing == directionFacing::Right) {
             SDL_RenderCopy(renderer, currentTexture, &source_rect, &destRect);
@@ -115,11 +132,15 @@ private:
     int x_position;
     int y_position;
 	int movement_speed = 250; // Speed of movement, can be adjusted.
-    AnimationState currentState;
+    AnimationState currentState = AnimationState::Idle;
     directionFacing facing = directionFacing::Right;
     int frameindex = 0;
 	float frameTimer = 0.0f; // Time per frame in seconds.
 	float framedelay = 0.1f; // Delay between frames in seconds.
+    int frameWidthIdle; // Width of each frame in the idle animation.
+    int frameHeightIdle; // Height of each frame in the idle animation.
+    int frameWidthRun; // Width of each frame in the run animation.
+	int frameHeightRun; // Height of each frame in the run animation.
 };
 
 int main(int argc, char* argv[])
@@ -164,15 +185,10 @@ int main(int argc, char* argv[])
         SDL_Quit();
         return -1;
     }
-    //define a source rectangle for the sprite
-    SDL_Rect source_rect;
-    source_rect.x = 0;
-    source_rect.y = 0;
-    source_rect.w = 64;
-    source_rect.h = 64;
     // Create a player sprite and NPC sprites
-    // multiple player sprites for different animations
-    Sprite player(renderer,"W_witch_idle.png","W_witch_run.png", 0, WINDOW_HEIGHT - source_rect.h);
+    Sprite player(renderer,"W_witch_idle.png",6, "W_witch_run.png",6, 0);
+	Sprite npc1(renderer, "R_witch_idle.png",6, "R_witch_run.png",8, 100);
+
 
     bool game_running = true;
     SDL_Event event;
@@ -193,20 +209,23 @@ int main(int argc, char* argv[])
                 game_running = false;
             break;
         }
-	  // Clear the screen (black).
+	  // Clear the screen (black)
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         // Handle user input for the player sprite.
         const Uint8* keystate = SDL_GetKeyboardState(nullptr);
         player.input_update(keystate, deltaTime);
 
-        // Render the player sprite.
-        player.render(source_rect);
+        // Render the player sprite
+        player.render();
+        // Render the NPC sprite
+        npc1.render();
        
-        // Present the updated frame.
+        // Present the updated frame
         SDL_RenderPresent(renderer);
         //after the right frame time has passed, change the frame of the sprite sheet
         player.updateframeindex(deltaTime);
+        npc1.updateframeindex(deltaTime);
 		// Limit the frame rate
         if (currentTime - lastTime < desiredframetime) {
             SDL_Delay(desiredframetime - (currentTime - lastTime));
