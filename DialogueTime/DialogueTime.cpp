@@ -36,7 +36,7 @@ public:
         frameWidthRun = runTexW ;
         frameHeightRun = runTexH / runFrameCount;
 
-        y_position = (WINDOW_HEIGHT - frameHeightIdle) + 10;
+        y_position = (WINDOW_HEIGHT - frameHeightIdle);
     }
 
     // Destructor: clean up the texture.
@@ -116,12 +116,14 @@ public:
         }
         
 	}
-    // function to handle moving to next source_rect for sprite animation
-   /* void next_idle_frame*/
-
+	//function for manually adjusting the y position of the sprite, useful for NPCs that need to be positioned differently.
+    void setYposition(int Yoffset) {
+        y_position += Yoffset;
+    }
     // Accessor functions.
     int getWidth() const { return width; }
     int getHeight() const { return height; }
+    int getYposition() const { return y_position; }
 
 private:
     SDL_Renderer* renderer;  // Our renderer stored from the initializer list.
@@ -188,6 +190,11 @@ int main(int argc, char* argv[])
     // Create a player sprite and NPC sprites
     Sprite player(renderer,"W_witch_idle.png",6, "W_witch_run.png",6, 0);
 	Sprite npc1(renderer, "R_witch_idle.png",6, "R_witch_run.png",8, 100);
+	Sprite npc2(renderer, "B_witch_idle.png", 6, "B_witch_run.png", 8, 300);
+    // npc1 spritesheet has a problem so manually setting y position for now
+    npc1.setYposition(15);
+    npc2.setYposition(6);
+
 
 
     bool game_running = true;
@@ -220,12 +227,14 @@ int main(int argc, char* argv[])
         player.render();
         // Render the NPC sprite
         npc1.render();
-       
+        npc2.render();
+    
         // Present the updated frame
         SDL_RenderPresent(renderer);
         //after the right frame time has passed, change the frame of the sprite sheet
         player.updateframeindex(deltaTime);
         npc1.updateframeindex(deltaTime);
+        npc2.updateframeindex(deltaTime);
 		// Limit the frame rate
         if (currentTime - lastTime < desiredframetime) {
             SDL_Delay(desiredframetime - (currentTime - lastTime));

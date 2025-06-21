@@ -131,6 +131,8 @@
     <ClCompile Include="DialogueTime.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="B_witch_idle.png" />
+    <Image Include="B_witch_run.png" />
     <Image Include="Idle(1).png" />
     <Image Include="R_witch_idle.png" />
     <Image Include="R_witch_run.png" />

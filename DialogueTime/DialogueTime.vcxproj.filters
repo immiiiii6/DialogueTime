@@ -35,5 +35,11 @@
     <Image Include="R_witch_run.png">
       <Filter>Resource Files</Filter>
     </Image>
+    <Image Include="B_witch_run.png">
+      <Filter>Resource Files</Filter>
+    </Image>
+    <Image Include="B_witch_idle.png">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>
