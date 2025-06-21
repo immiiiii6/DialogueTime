@@ -12,6 +12,10 @@ enum class AnimationState {
     Idle,
     Run
 };
+enum class directionFacing {
+    Left,
+    Right
+};;
 
 class Sprite {
 public:
@@ -27,9 +31,9 @@ public:
   /*  ~Sprite() {
         SDL_DestroyTexture(texture);
     }*/
- 
+
     // Render the sprite at position (x, y).
-    void render(SDL_Rect &source_rect) const {
+    void render(SDL_Rect& source_rect) const {
         SDL_Texture* currentTexture = nullptr;
         //check current animation state to get the right rexture
         if (currentState == AnimationState::Idle) {
@@ -38,18 +42,34 @@ public:
         else if (currentState == AnimationState::Run) {
             currentTexture = runTexture;
         }
-		//adjust source rectangle based on frame index
+        //adjust source rectangle based on frame index
         source_rect.y = 0; // reset before using frame index to move to correct frame
-        source_rect.y = source_rect.y + (frameindex*source_rect.h) ;
-		printf("source rect y is: %i \n", source_rect.y);
+        source_rect.y = source_rect.y + (frameindex * source_rect.h);
+
         SDL_Rect destRect = { x_position, y_position, source_rect.w, source_rect.h };
-        SDL_RenderCopy(renderer, currentTexture, &source_rect, &destRect);
-        printf("current frame index is: %i \n", frameindex);
+        if (facing == directionFacing::Right) {
+            SDL_RenderCopy(renderer, currentTexture, &source_rect, &destRect);
+        }
+        else if (facing == directionFacing::Left) {
+            SDL_RenderCopyEx(
+                renderer,           // your SDL_Renderer*
+                currentTexture,            // your SDL_Texture*
+                &source_rect,           // source rectangle (can be nullptr for full texture)
+                &destRect,           // destination rectangle
+                0.0,                // angle (0.0 means no rotation)
+                nullptr,            // center of rotation (nullptr = center of dstRect)
+                SDL_FLIP_HORIZONTAL // flip mode
+            );
+        }
     }
     //helper function to change the animation state of the sprite in other member functions
     void setAnimationState(AnimationState newState) {
         currentState = newState;
     }
+	//helper function to change the direction the sprite is facing
+    void setDirectionFacing(directionFacing newFacing) {
+        facing = newFacing;
+	}
     //updates the frame index if enough time has passed so we can mnove to the next frame for animation
     void updateframeindex(float deltatime) {
         frameTimer += deltatime;
@@ -64,11 +84,13 @@ public:
         if (keystate[SDL_SCANCODE_A] == 1) {
             // change to running state
             setAnimationState(AnimationState::Run);
+            setDirectionFacing(directionFacing::Left);
             x_position += -movement_speed * deltatime; // move left 
             
         }
         else if (keystate[SDL_SCANCODE_D] == 1) {
             setAnimationState(AnimationState::Run);
+            setDirectionFacing(directionFacing::Right);
             x_position += movement_speed * deltatime; // move right
             
         }
@@ -94,6 +116,7 @@ private:
     int y_position;
 	int movement_speed = 250; // Speed of movement, can be adjusted.
     AnimationState currentState;
+    directionFacing facing = directionFacing::Right;
     int frameindex = 0;
 	float frameTimer = 0.0f; // Time per frame in seconds.
 	float framedelay = 0.1f; // Delay between frames in seconds.
