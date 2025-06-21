@@ -6,6 +6,7 @@
 
 #define WINDOW_HEIGHT 600
 #define WINDOW_WIDTH 800
+#define target_fps 60
 
 enum class AnimationState {
     Idle,
@@ -38,32 +39,43 @@ public:
             currentTexture = runTexture;
         }
 		//adjust source rectangle based on frame index
-        source_rect.y = source_rect.y * frameindex;
+        source_rect.y = 0; // reset before using frame index to move to correct frame
+        source_rect.y = source_rect.y + (frameindex*source_rect.h) ;
+		printf("source rect y is: %i \n", source_rect.y);
         SDL_Rect destRect = { x_position, y_position, source_rect.w, source_rect.h };
         SDL_RenderCopy(renderer, currentTexture, &source_rect, &destRect);
-        //update the private variables for position
+        printf("current frame index is: %i \n", frameindex);
     }
     //helper function to change the animation state of the sprite in other member functions
     void setAnimationState(AnimationState newState) {
         currentState = newState;
     }
+    //updates the frame index if enough time has passed so we can mnove to the next frame for animation
+    void updateframeindex(float deltatime) {
+        frameTimer += deltatime;
+        if (frameTimer > framedelay) {
+            frameindex = (frameindex + 1) % 6;
+			frameTimer = 0.0f; // reset the timer
+        }
+    }
 // move the sprite based on user input and change animation state accordingly
-    void input_update(const Uint8* keystate) {
+    void input_update(const Uint8* keystate, float deltatime) {
         // Handle user input here, e.g., move the sprite based on what key is held down
         if (keystate[SDL_SCANCODE_A] == 1) {
             // change to running state
             setAnimationState(AnimationState::Run);
-            x_position += -movement_speed; // move left 
+            x_position += -movement_speed * deltatime; // move left 
             
         }
         else if (keystate[SDL_SCANCODE_D] == 1) {
             setAnimationState(AnimationState::Run);
-            x_position += movement_speed; // move right
+            x_position += movement_speed * deltatime; // move right
             
         }
         else {
             setAnimationState(AnimationState::Idle);
         }
+        
 	}
     // function to handle moving to next source_rect for sprite animation
    /* void next_idle_frame*/
@@ -80,9 +92,11 @@ private:
     int height;
     int x_position;
     int y_position;
-	int movement_speed = 5; // Speed of movement, can be adjusted.
+	int movement_speed = 250; // Speed of movement, can be adjusted.
     AnimationState currentState;
-    int frameindex = 1;
+    int frameindex = 0;
+	float frameTimer = 0.0f; // Time per frame in seconds.
+	float framedelay = 0.1f; // Delay between frames in seconds.
 };
 
 int main(int argc, char* argv[])
@@ -139,9 +153,16 @@ int main(int argc, char* argv[])
 
     bool game_running = true;
     SDL_Event event;
+    int desiredframetime = 1000.0f / target_fps;
+    Uint32 lastTime = SDL_GetTicks();
+
 
     // Main game loop.
     while (game_running) {
+        Uint32 currentTime = SDL_GetTicks(); // in milliseconds
+        float deltaTime = (currentTime - lastTime) / 1000.0f; // convert to seconds
+        lastTime = currentTime;
+
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
                 game_running = false;
@@ -154,17 +175,20 @@ int main(int argc, char* argv[])
         SDL_RenderClear(renderer);
         // Handle user input for the player sprite.
         const Uint8* keystate = SDL_GetKeyboardState(nullptr);
-        player.input_update(keystate);
+        player.input_update(keystate, deltaTime);
 
         // Render the player sprite.
         player.render(source_rect);
        
         // Present the updated frame.
         SDL_RenderPresent(renderer);
-	
-        //each frame, change the frame of the sprite sheet (idle/)
-        SDL_Delay(16);  // Roughly 60 FPS.
-        //move to next frame of sprite sheet
+        //after the right frame time has passed, change the frame of the sprite sheet
+        player.updateframeindex(deltaTime);
+		// Limit the frame rate
+        if (currentTime - lastTime < desiredframetime) {
+            SDL_Delay(desiredframetime - (currentTime - lastTime));
+        }
+      
     }
 
     // Clean up.
